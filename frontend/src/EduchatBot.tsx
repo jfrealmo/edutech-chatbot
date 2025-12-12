@@ -41,9 +41,6 @@ const EduchatBot = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
-  const [topicStats, setTopicStats] = useState<Record<string, number>>({});
-  const [hourlyStats, setHourlyStats] = useState<Record<string, number>>({});
-  const [requestTypes, setRequestTypes] = useState<Record<string, number>>({});
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [analytics, setAnalytics] = useState<{
   totalInteractions: number;
@@ -321,7 +318,7 @@ const EduchatBot = () => {
     const lowerMsg = userMsg.toLowerCase();
     let category = 'general';
     let response = '';
-    
+
     for (const [key, data] of Object.entries(knowledgeBase)) {
       if (data.keywords.some(keyword => lowerMsg.includes(keyword))) {
         category = key;
@@ -329,7 +326,7 @@ const EduchatBot = () => {
         break;
       }
     }
-    
+
     if (!response) {
       if (lowerMsg.includes('hola') || lowerMsg.includes('buenos') || lowerMsg.includes('saludos')) {
         category = 'saludo';
@@ -342,16 +339,16 @@ const EduchatBot = () => {
         response = '🤔 Entiendo tu consulta. Como asistente educativo, puedo ayudarte con:\n\n📅 Calendario académico y fechas importantes\n⏰ Horarios de clases\n📄 Trámites y certificados\n🚌 Rutas escolares\n📚 Recursos educativos\n\n¿Sobre cuál de estos temas te gustaría saber más?';
       }
     }
-    
+
     updateAnalytics(category);
-    
+
     return response;
   };
 
   const updateAnalytics = (category: string) => {
     const currentHour = new Date().getHours();
     const hourRange = `${currentHour}:00 - ${currentHour + 1}:00`;
-    
+
     setAnalytics(prev => ({
       totalInteractions: prev.totalInteractions + 1,
       uniqueUsers: prev.uniqueUsers,
@@ -381,9 +378,9 @@ const EduchatBot = () => {
   const handleSendMessage = () => {
     if (inputMessage.trim() === '') return;
 
-    const userMessage = { role: 'user', content: inputMessage };
+    const userMessage: Message = { role: 'user', content: inputMessage };
     setMessages(prev => [...prev, userMessage]);
-    
+
     const lowerInput = inputMessage.toLowerCase();
     if (lowerInput.includes('certificado')) recordRequest('certificados');
     else if (lowerInput.includes('constancia')) recordRequest('constancias');
@@ -391,13 +388,14 @@ const EduchatBot = () => {
     else if (lowerInput.includes('carnet') || lowerInput.includes('carné')) recordRequest('carnet');
     else if (lowerInput.includes('inasistencia') || lowerInput.includes('falta')) recordRequest('inasistencias');
     else if (lowerInput.includes('entrevista') || lowerInput.includes('cita')) recordRequest('entrevistas');
-    
+
     setInputMessage('');
     setIsTyping(true);
 
     setTimeout(() => {
       const botResponse = getBotResponse(inputMessage);
-      setMessages(prev => [...prev, { role: 'assistant', content: botResponse }]);
+      const botMessage: Message = { role: 'assistant', content: botResponse };
+      setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
     }, 1000);
   };
@@ -437,8 +435,8 @@ const EduchatBot = () => {
         </div>
 
         <label className="flex items-start gap-3 mb-6 cursor-pointer group">
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             id="consent"
             className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
             onChange={(e) => e.target.checked && handleConsent(true)}
@@ -499,8 +497,8 @@ const EduchatBot = () => {
           {messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] md:max-w-[60%] rounded-2xl p-4 shadow-md ${
-                msg.role === 'user' 
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white' 
+                msg.role === 'user'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                   : 'bg-white text-gray-800'
               }`}>
                 <p className="whitespace-pre-line">{msg.content}</p>
@@ -553,7 +551,7 @@ const EduchatBot = () => {
         >
           ← Volver al Chat
         </button>
-        
+
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">📚 Habilidades Más Demandadas 2025</h1>
           <p className="text-xl text-gray-600">Descubre las competencias más solicitadas y aprende con roadmaps estructurados</p>
@@ -589,7 +587,7 @@ const EduchatBot = () => {
                 ← Volver a Habilidades
               </button>
             </div>
-            
+
             <div className="text-center mb-8">
               <div className={`text-6xl mb-4 inline-block bg-gradient-to-br ${selectedSkill.color} w-24 h-24 rounded-full flex items-center justify-center`}>
                 <span>{selectedSkill.icon}</span>
@@ -600,22 +598,22 @@ const EduchatBot = () => {
             </div>
 
             <div className="space-y-6">
-              {['beginner', 'intermediate', 'advanced'].map((level, idx) => {
-                const labels = { beginner: '🌱 Principiante', intermediate: '🚀 Intermedio', advanced: '⭐ Avanzado' };
-                const data = selectedSkill.roadmap[level];
-                
+              {['beginner', 'intermediate', 'advanced'].map((level) => {
+                const labels: Record<string, string> = { beginner: '🌱 Principiante', intermediate: '🚀 Intermedio', advanced: '⭐ Avanzado' };
+                const data = selectedSkill.roadmap[level as keyof typeof selectedSkill.roadmap];
+
                 return (
                   <div key={level} className="border-l-4 border-blue-500 pl-6 py-4">
                     <h3 className="text-2xl font-bold text-gray-800 mb-3">{labels[level]}</h3>
                     <p className="text-sm text-gray-600 mb-3"><strong>Duración:</strong> {data.duration}</p>
-                    
+
                     <div className="mb-4">
                       <p className="font-semibold text-gray-700 mb-2">Aprenderás:</p>
                       <ul className="list-disc list-inside space-y-1 text-gray-600">
                         {data.topics.map((topic: string, i: number) => <li key={i}>{topic}</li>)}
                       </ul>
                     </div>
-                    
+
                     <div>
                       <p className="font-semibold text-gray-700 mb-2">Recursos recomendados:</p>
                       <ul className="list-disc list-inside space-y-1 text-blue-600">
@@ -644,11 +642,11 @@ const EduchatBot = () => {
                   doc.text(`Roadmap ${selectedSkill.name}`, 14, 20);
                   let y = 30;
                   ['beginner', 'intermediate', 'advanced'].forEach(level => {
-                    const data = selectedSkill.roadmap[level];
+                    const data = selectedSkill.roadmap[level as keyof typeof selectedSkill.roadmap];
                     doc.setFontSize(12);
                     doc.text(`- ${level}: ${data.duration}`, 14, y);
                     y += 10;
-                    data.topics.forEach(t => {
+                    data.topics.forEach((t: string) => {
                       doc.text(`  • ${t}`, 14, y);
                       y += 7;
                     });
@@ -676,7 +674,7 @@ const EduchatBot = () => {
         >
           ← Volver al Chat
         </button>
-        
+
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">👥 Únete a Nuestras Comunidades</h1>
           <p className="text-xl text-gray-600">Conecta con otros estudiantes, docentes y padres de familia</p>
@@ -731,26 +729,15 @@ const EduchatBot = () => {
     const getTopicsData = () => {
       return Object.entries(analytics.topicStats)
         .map(([key, value]) => ({
-          name: topicLabels[key] || key,
+          name: (topicLabels as Record<string,string>)[key] || key,
           value: value,
-          color: key === 'calendario' ? 'bg-blue-500' : 
+          color: key === 'calendario' ? 'bg-blue-500' :
                  key === 'tramites' ? 'bg-purple-500' :
                  key === 'horarios' ? 'bg-green-500' :
                  key === 'recursos' ? 'bg-orange-500' :
                  key === 'rutas' ? 'bg-pink-500' : 'bg-gray-500'
         }))
         .sort((a, b) => b.value - a.value)
-        .slice(0, 5);
-    };
-
-    const getHourlyData = () => {
-      return Object.entries(analytics.hourlyStats)
-        .map(([hour, users]) => ({
-          hour,
-          users,
-          peak: users > 5
-        }))
-        .sort((a, b) => b.users - a.users)
         .slice(0, 5);
     };
 
@@ -763,25 +750,22 @@ const EduchatBot = () => {
         'inasistencias': '📅',
         'entrevistas': '👨‍🏫'
       };
-      
+
       return Object.entries(analytics.requestTypes)
         .map(([type, count]) => ({
           name: type,
           count,
-          icon: requestIcons[type] || '📄'
+          icon: (requestIcons as Record<string,string>)[type] || '📄'
         }))
         .sort((a, b) => b.count - a.count);
     };
 
     const topicsData = getTopicsData();
-    const hourlyData = getHourlyData();
     const requestsData = getRequestsData();
-    const maxTopicValue = Math.max(...topicsData.map(t => t.value), 1);
-    const maxHourlyValue = Math.max(...hourlyData.map(h => h.users), 1);
     const avgResponseTime = 1.2;
     const satisfactionRate = 94;
 
-    const PieTopics = ({ data }) => (
+    const PieTopics = ({ data }: { data: { name: string, value: number, color: string }[] }) => (
       <div className="w-64 h-64 mx-auto">
         <PieChart
           data={data.map((d, i) => ({
@@ -789,7 +773,7 @@ const EduchatBot = () => {
             value: d.value,
             color: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'][i]
           }))}
-          label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`}
+          label={({ dataEntry }: { dataEntry: { percentage: number } }) => `${Math.round(dataEntry.percentage)}%`}
           labelStyle={{ fontSize: 8, fill: '#fff' }}
           radius={40}
           lineWidth={60}
@@ -798,7 +782,7 @@ const EduchatBot = () => {
       </div>
     );
 
-    const BarChart = ({ data }) => {
+    const BarChart = ({ data }: { data: { name: string, value: number, color: string }[] }) => {
       const max = Math.max(...data.map(d => d.value), 1);
       return (
         <div className="space-y-2">
@@ -860,7 +844,7 @@ const EduchatBot = () => {
           >
             ← Volver al Chat
           </button>
-          
+
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">📊 Panel Analítico Educativo</h1>
             <p className="text-gray-600">Dashboard de estadísticas y métricas de uso</p>
