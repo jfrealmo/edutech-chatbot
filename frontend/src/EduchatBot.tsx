@@ -41,9 +41,6 @@ const EduchatBot = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
-  const [topicStats, setTopicStats] = useState<Record<string, number>>({});
-  const [hourlyStats, setHourlyStats] = useState<Record<string, number>>({});
-  const [requestTypes, setRequestTypes] = useState<Record<string, number>>({});
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [analytics, setAnalytics] = useState<{
   totalInteractions: number;
@@ -381,7 +378,7 @@ const EduchatBot = () => {
   const handleSendMessage = () => {
     if (inputMessage.trim() === '') return;
 
-    const userMessage = { role: 'user', content: inputMessage };
+    const userMessage: Message = { role: 'user', content: inputMessage };
     setMessages(prev => [...prev, userMessage]);
     
     const lowerInput = inputMessage.toLowerCase();
@@ -397,7 +394,8 @@ const EduchatBot = () => {
 
     setTimeout(() => {
       const botResponse = getBotResponse(inputMessage);
-      setMessages(prev => [...prev, { role: 'assistant', content: botResponse }]);
+      const botMessage: Message = { role: 'assistant', content: botResponse };
+      setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
     }, 1000);
   };
@@ -600,9 +598,9 @@ const EduchatBot = () => {
             </div>
 
             <div className="space-y-6">
-              {['beginner', 'intermediate', 'advanced'].map((level, idx) => {
-                const labels = { beginner: '🌱 Principiante', intermediate: '🚀 Intermedio', advanced: '⭐ Avanzado' };
-                const data = selectedSkill.roadmap[level];
+              {['beginner', 'intermediate', 'advanced'].map((level) => {
+                const labels: Record<string, string> = { beginner: '🌱 Principiante', intermediate: '🚀 Intermedio', advanced: '⭐ Avanzado' };
+                const data = selectedSkill.roadmap[level as keyof typeof selectedSkill.roadmap];
                 
                 return (
                   <div key={level} className="border-l-4 border-blue-500 pl-6 py-4">
@@ -644,11 +642,11 @@ const EduchatBot = () => {
                   doc.text(`Roadmap ${selectedSkill.name}`, 14, 20);
                   let y = 30;
                   ['beginner', 'intermediate', 'advanced'].forEach(level => {
-                    const data = selectedSkill.roadmap[level];
+                    const data = selectedSkill.roadmap[level as keyof typeof selectedSkill.roadmap];
                     doc.setFontSize(12);
                     doc.text(`- ${level}: ${data.duration}`, 14, y);
                     y += 10;
-                    data.topics.forEach(t => {
+                    data.topics.forEach((t: string) => {
                       doc.text(`  • ${t}`, 14, y);
                       y += 7;
                     });
@@ -731,7 +729,7 @@ const EduchatBot = () => {
     const getTopicsData = () => {
       return Object.entries(analytics.topicStats)
         .map(([key, value]) => ({
-          name: topicLabels[key] || key,
+          name: (topicLabels as Record<string,string>)[key] || key,
           value: value,
           color: key === 'calendario' ? 'bg-blue-500' : 
                  key === 'tramites' ? 'bg-purple-500' :
@@ -740,17 +738,6 @@ const EduchatBot = () => {
                  key === 'rutas' ? 'bg-pink-500' : 'bg-gray-500'
         }))
         .sort((a, b) => b.value - a.value)
-        .slice(0, 5);
-    };
-
-    const getHourlyData = () => {
-      return Object.entries(analytics.hourlyStats)
-        .map(([hour, users]) => ({
-          hour,
-          users,
-          peak: users > 5
-        }))
-        .sort((a, b) => b.users - a.users)
         .slice(0, 5);
     };
 
@@ -768,20 +755,17 @@ const EduchatBot = () => {
         .map(([type, count]) => ({
           name: type,
           count,
-          icon: requestIcons[type] || '📄'
+          icon: (requestIcons as Record<string,string>)[type] || '📄'
         }))
         .sort((a, b) => b.count - a.count);
     };
 
     const topicsData = getTopicsData();
-    const hourlyData = getHourlyData();
     const requestsData = getRequestsData();
-    const maxTopicValue = Math.max(...topicsData.map(t => t.value), 1);
-    const maxHourlyValue = Math.max(...hourlyData.map(h => h.users), 1);
     const avgResponseTime = 1.2;
     const satisfactionRate = 94;
 
-    const PieTopics = ({ data }) => (
+    const PieTopics = ({ data }: { data: { name: string, value: number, color: string }[] }) => (
       <div className="w-64 h-64 mx-auto">
         <PieChart
           data={data.map((d, i) => ({
@@ -789,7 +773,7 @@ const EduchatBot = () => {
             value: d.value,
             color: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'][i]
           }))}
-          label={({ dataEntry }) => `${Math.round(dataEntry.percentage)}%`}
+          label={({ dataEntry }: { dataEntry: { percentage: number } }) => `${Math.round(dataEntry.percentage)}%`}
           labelStyle={{ fontSize: 8, fill: '#fff' }}
           radius={40}
           lineWidth={60}
@@ -798,7 +782,7 @@ const EduchatBot = () => {
       </div>
     );
 
-    const BarChart = ({ data }) => {
+    const BarChart = ({ data }: { data: { name: string, value: number, color: string }[] }) => {
       const max = Math.max(...data.map(d => d.value), 1);
       return (
         <div className="space-y-2">
