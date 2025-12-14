@@ -314,37 +314,6 @@ const EduchatBot = () => {
     }
   };
 
-  const getBotResponse = (userMsg: string): string => {
-    const lowerMsg = userMsg.toLowerCase();
-    let category = 'general';
-    let response = '';
-    
-    for (const [key, data] of Object.entries(knowledgeBase)) {
-      if (data.keywords.some(keyword => lowerMsg.includes(keyword))) {
-        category = key;
-        response = data.response;
-        break;
-      }
-    }
-    
-    if (!response) {
-      if (lowerMsg.includes('hola') || lowerMsg.includes('buenos') || lowerMsg.includes('saludos')) {
-        category = 'saludo';
-        response = '¡Hola! 👋 ¿En qué puedo ayudarte hoy? Pregúntame sobre calendario, horarios, trámites, rutas escolares o recursos educativos.';
-      } else if (lowerMsg.includes('gracias')) {
-        category = 'despedida';
-        response = '¡De nada! 😊 Estoy aquí para ayudarte cuando lo necesites. ¿Hay algo más en lo que pueda asistirte?';
-      } else {
-        category = 'general';
-        response = '🤔 Entiendo tu consulta. Como asistente educativo, puedo ayudarte con:\n\n📅 Calendario académico y fechas importantes\n⏰ Horarios de clases\n📄 Trámites y certificados\n🚌 Rutas escolares\n📚 Recursos educativos\n\n¿Sobre cuál de estos temas te gustaría saber más?';
-      }
-    }
-    
-    updateAnalytics(category);
-    
-    return response;
-  };
-
   const updateAnalytics = (category: string) => {
     const currentHour = new Date().getHours();
     const hourRange = `${currentHour}:00 - ${currentHour + 1}:00`;
@@ -375,13 +344,15 @@ const EduchatBot = () => {
     }));
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputMessage.trim() === '') return;
 
     const userMessage: Message = { role: 'user', content: inputMessage };
     setMessages(prev => [...prev, userMessage]);
     
     const lowerInput = inputMessage.toLowerCase();
+    
+    // Registrar tipos de solicitud
     if (lowerInput.includes('certificado')) recordRequest('certificados');
     else if (lowerInput.includes('constancia')) recordRequest('constancias');
     else if (lowerInput.includes('paz y salvo')) recordRequest('paz y salvo');
@@ -389,15 +360,67 @@ const EduchatBot = () => {
     else if (lowerInput.includes('inasistencia') || lowerInput.includes('falta')) recordRequest('inasistencias');
     else if (lowerInput.includes('entrevista') || lowerInput.includes('cita')) recordRequest('entrevistas');
     
+    const currentInput = inputMessage;
     setInputMessage('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const botResponse = getBotResponse(inputMessage);
-      const botMessage: Message = { role: 'assistant', content: botResponse };
-      setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
-    }, 1000);
+    // --- Lógica Principal del Chatbot ---
+    let botResponse = '';
+    let category = 'general';
+    let foundInKB = false;
+
+    // 1. Buscar en la base de conocimientos
+    for (const [key, data] of Object.entries(knowledgeBase)) {
+      if (data.keywords.some(keyword => lowerInput.includes(keyword))) {
+        category = key;
+        botResponse = data.response;
+        foundInKB = true;
+        break;
+      }
+    }
+    
+    // 2. Manejar saludos y despedidas
+    if (!foundInKB) {
+      if (lowerInput.includes('hola') || lowerInput.includes('buenos') || lowerInput.includes('saludos')) {
+        category = 'saludo';
+        botResponse = '¡Hola! 👋 ¿En qué puedo ayudarte hoy? Pregúntame sobre calendario, horarios, trámites, rutas escolares o recursos educativos.';
+        foundInKB = true;
+      } else if (lowerInput.includes('gracias')) {
+        category = 'despedida';
+        botResponse = '¡De nada! 😊 Estoy aquí para ayudarte cuando lo necesites. ¿Hay algo más en lo que pueda asistirte?';
+        foundInKB = true;
+      }
+    }
+
+    // 3. Si no se encontró en la base de conocimientos, llamar al LLM
+    if (!foundInKB) {
+      try {
+        const response = await fetch('/api/ask-llm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: currentInput }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        botResponse = data.answer;
+        category = 'llm_query'; // Categoría para analíticas
+        
+      } catch (error) {
+        console.error("Error al contactar al LLM:", error);
+        botResponse = "Lo siento, estoy teniendo problemas para conectarme con mi inteligencia artificial. Por favor, intenta de nuevo más tarde.";
+        category = 'llm_error';
+      }
+    }
+    
+    updateAnalytics(category);
+    
+    const botMessage: Message = { role: 'assistant', content: botResponse };
+    setMessages(prev => [...prev, botMessage]);
+    setIsTyping(false);
   };
 
   const ConsentPage = () => (
