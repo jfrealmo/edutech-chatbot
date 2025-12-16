@@ -6,7 +6,9 @@ Este proyecto implementa un asistente educativo con frontend en **React/Vite/Typ
 
 ## 🚀 Requisitos previos: (instalar)
 
-- [Docker](https://docs.docker.com/get-docker/) y [Docker Compose](https://docs.docker.com/compose/) una vez instalados, asegúrate de que Docker desktop esté corriendo antes de ejecutar los comandos.
+- [Docker](https://docs.docker.com/get-docker/) y [Docker Compose](https://docs.docker.com/compose/)
+[ollama](https://ollama.com/),
+ una vez instalados, asegúrate de que Docker desktop esté corriendo antes de ejecutar los comandos.
 - Git para clonar el repositorio:
 
 1. Ejecutar en la terminal de comandos:
@@ -20,6 +22,11 @@ docker compose -f docker-compose.prod.yml up -d
 - Frontend → http://localhost
 - Backend → http://localhost:8000
 
+Para usar el chatbot con IA se de debe tener en cuenta:
+
+1. Si se tiene código (con créditos) de proveedor de pago como OPENAI, CLAUDE U OTRO.  La aplicación se conectará directamente al proveedor de pago.
+
+2. Si no se tiene código, se debe abrir Ollama en la terminal de comandos CMD: y ejecutar: ollama run llama2, luego escribir p. ej: "Hola" y mamtener abierta la ventana, mientras se usa el chatbot.
 
 ***Estos fueron los pasos que se siguieron para pasar a la arquitectura contenerizada con Docker (no hay que volver a realizar)***
 
